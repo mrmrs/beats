@@ -3,15 +3,16 @@
 var gulp = require('gulp'),
     gutil = require('gulp-util'),
     watch = require('gulp-watch'),
-    lr    = require('tiny-lr'),
-    server = lr(),
-    livereload = require('gulp-livereload'),
     prefix = require('gulp-autoprefixer'),
     minifyCSS = require('gulp-minify-css'),
     sass = require('gulp-ruby-sass'),
     imagemin = require('gulp-imagemin'),
     svgmin = require('gulp-svgmin'),
-    csslint = require('gulp-csslint');
+    csslint = require('gulp-csslint'),
+    size = require('gulp-size'),
+    rename = require('gulp-rename'),
+    browserSync = require('browser-sync'),
+    browserReload = browserSync.reload;
 
 
 // Task to minify all css files in the css directory
@@ -64,8 +65,39 @@ gulp.task('pre-process', function(){
         return files.pipe(sass({loadPath: ['./sass/'], style: "compact"}))
           .pipe(prefix())
           .pipe(gulp.dest('./css/'))
-          .pipe(livereload(server));
       }));
+});
+
+
+
+// Task that compiles scss files down to good old css
+gulp.task('pre-process', function(){
+  gulp.src('./sass/i.scss')
+      .pipe(watch(function(files) {
+        return files.pipe(sass())
+          .pipe(size({gzip: false, showFiles: true, title:'PRE-prefixed uncompressed css'}))
+          .pipe(size({gzip: true, showFiles: true, title:'PRE-prefixed uncompressed css'}))
+          .pipe(prefix())
+          .pipe(size({gzip: false, showFiles: true, title:'Prefixed uncompressed css'}))
+          .pipe(size({gzip: true, showFiles: true, title:'Prefixed uncompressed css'}))
+          .pipe(gulp.dest('css'))
+          .pipe(browserSync.reload({stream:true}));
+      }));
+});
+
+
+// Initialize browser-sync which starts a static server also allows for 
+// browsers to reload on filesave
+gulp.task('browser-sync', function() {
+    browserSync.init(null, {
+        server: {
+            baseDir: "./"
+        }
+    });
+});
+
+gulp.task('bs-reload', function () {
+    browserSync.reload();
 });
 
 
@@ -78,18 +110,13 @@ gulp.task('pre-process', function(){
  automatic reloading
 
 */
-
-gulp.task('default', function(){
-  gulp.run('pre-process', 'csslint');
-  server.listen(35729, function (err) {
-    gulp.watch(['./sass/*.scss'], function(event) {
-      gulp.run('pre-process', 'csslint');
-    });
-  });
+gulp.task('default', ['pre-process', 'minify-css', 'bs-reload', 'browser-sync'], function(){
+  gulp.start('pre-process', 'csslint');
+  gulp.watch('sass/*.scss', ['pre-process', 'minify-css']);
+  gulp.watch('css/i.css', ['bs-reload']);
+  gulp.watch('*.html', ['bs-reload']);
 });
-
 
 gulp.task('production', function(){
     gulp.run('minify-css', 'minify-img', 'minify-svg');
 });
-

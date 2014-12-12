@@ -62,8 +62,9 @@ gulp.task('concat', function() {
 
 gulp.task('concat-js', function() {
   gulp.src(['angular.min.js', 'plangular.js'])
-    .pipe(concat('site.js'))
+    .pipe(concat('plangular.js'))
     .pipe(uglify())
+    .pipe(rename('plangular.min.js'))
     .pipe(gulp.dest('./'))
 });
 

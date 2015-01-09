@@ -1,127 +1,85 @@
-// Load plugins
 
-var gulp = require('gulp'),
-    gutil = require('gulp-util'),
-    watch = require('gulp-watch'),
-    prefix = require('gulp-autoprefixer'),
-    concat = require('gulp-concat'),
-    minifyCSS = require('gulp-minify-css'),
-    sass = require('gulp-sass'),
-    imagemin = require('gulp-imagemin'),
-    svgmin = require('gulp-svgmin'),
-    uncss = require('gulp-uncss'),
-    size = require('gulp-size'),
-    rename = require('gulp-rename'),
-    uglify = require('gulp-uglify'),
-    browserSync = require('browser-sync'),
-    browserReload = browserSync.reload,
-    csslint = require('gulp-csslint');
+var gulp = require('gulp');
 
+var browserify = require('gulp-browserify');
+var cheerio = require('gulp-cheerio');
+var connect = require('gulp-connect');
+var prefix = require('gulp-autoprefixer');
+var rename = require('gulp-rename');
+var sass = require('gulp-sass');
+var uglify = require('gulp-uglifyjs');
+var watch = require('gulp-watch');
 
-// Task to minify all css files in the css directory
+var markdown = require('gulp-markdown');
 
+var pygmentize = require('./docs/gulp/pygments');
 
-// Task to optmize and minify images
-
-gulp.task('minify-img', function() {
-  return gulp.src('./img/*')
-    .pipe((imagemin({ optimizationLevel: 5, progressive: true, interlaced: true })))
-    .pipe(gulp.dest('./img'));
-});
-
-
-// Task to optimize and minify svg
-
-gulp.task('minify-svg', function(){
-  gulp.src('./img/svg')
-          .pipe(svgmin())
-          .pipe(gulp.dest('./img/svg'));
-});
-
-
-// Task that compiles scss files down to good old css
-gulp.task('pre-process', function(){
-  gulp.src('./sass/beats.scss')
-      .pipe(watch(function(files) {
-        return files.pipe(sass())
-          .pipe(size({gzip: false, showFiles: true, title:'un-prefixed css'}))
-          .pipe(size({gzip: true, showFiles: true, title:'un-prefixed gzipped css'}))
-          .pipe(prefix())
-          .pipe(size({gzip: false, showFiles: true, title:'prefixed css'}))
-          .pipe(size({gzip: true, showFiles: true, title:'prefixed css'}))
-          .pipe(gulp.dest('css'))
-          .pipe(browserSync.reload({stream:true}));
-      }));
-});
-
-gulp.task('concat', function() {
-  gulp.src(['site/style.css', 'css/beats.css'])
-    .pipe(concat('site.css'))
-    .pipe(gulp.dest('./css/'))
-});
-
-gulp.task('concat-js', function() {
-  gulp.src(['angular.min.js', 'plangular.js'])
-    .pipe(concat('plangular.js'))
-    .pipe(uglify())
-    .pipe(rename('plangular.min.js'))
+gulp.task('compilejs', function() {
+  gulp.src('./src/v-plangular.js')
+    .pipe(browserify())
     .pipe(gulp.dest('./'))
+    .pipe(uglify())
+    .pipe(rename('v-plangular.min.js'))
+    .pipe(gulp.dest('./'));
+  gulp.src('./src/ng-plangular.js')
+    .pipe(gulp.dest('./'))
+    .pipe(uglify())
+    .pipe(rename('ng-plangular.min.js'))
+    .pipe(gulp.dest('./'));
 });
 
-gulp.task('minify-css', function(){
-  gulp.src(['css/site.css'])
-    .pipe(uncss({
-      html: ['index.html'],
-      ignore: [':hover', ':focus', ':visited', ':link', ':active', ':before', ':after']
+
+gulp.task('docs-pygmentize', function() {
+  gulp.src('./docs/vuejs/src/*.html')
+    .pipe(gulp.dest('./docs/vuejs/partials'))
+    .pipe(pygmentize())
+    .pipe(rename(function(path) { path.basename += '-code', path.extname = '.html' }))
+    .pipe(gulp.dest('./docs/vuejs/partials'));
+  gulp.src('./docs/angular/src/*.html')
+    .pipe(gulp.dest('./docs/angular/partials'))
+    .pipe(pygmentize())
+    .pipe(cheerio(function($) {
+      $('.highlight').attr('ng-non-bindable', '');
     }))
-    .pipe(minifyCSS())
-    .pipe(rename('site.min.css'))
-    .pipe(gulp.dest('./css/'))
-    .pipe(size({gzip: false, showFiles: true, title:'minified css'}))
-    .pipe(size({gzip: true, showFiles: true, title:'minified css'}));
+    .pipe(rename(function(path) { path.basename += '-code', path.extname = '.html' }))
+    .pipe(gulp.dest('./docs/angular/partials'));
 });
 
-
-gulp.task('csslint', function(){
-  gulp.src('./css/beats.css')
-    .pipe(csslint({
-          'compatible-vendor-prefixes': false,
-          'box-sizing': false,
-          'important': false,
-          'known-properties': false
-        }))
-    .pipe(csslint.reporter());
+gulp.task('docs-sass', function() {
+  gulp.src('./docs/src/autobass.scss')
+    .pipe(sass({ options: { outputStyle: 'compressed' } }))
+    .pipe(prefix())
+    .pipe(gulp.dest('./docs'));
 });
 
-// Initialize browser-sync which starts a static server also allows for
-// browsers to reload on filesave
-gulp.task('browser-sync', function() {
-    browserSync.init(null, {
-        server: {
-            baseDir: "./"
-        }
-    });
+// Currently unused
+//gulp.task('docs-md', function() {
+//  var options = require('./docs/gulp/md-options');
+//  gulp.src('./docs/examples/**/*.md')
+//    .pipe(markdown(options))
+//    .pipe(gulp.dest('./docs/examples'));
+//});
+
+gulp.task('docs-js', function() {
+  gulp.src('./docs/vuejs/src/*.js')
+    .pipe(browserify())
+    .pipe(uglify())
+    .pipe(gulp.dest('./docs/vuejs'));
+  gulp.src('./docs/angular/src/*.js')
+    .pipe(browserify())
+    .pipe(uglify())
+    .pipe(gulp.dest('./docs/angular'));
 });
 
-// Function to call for reloading browsers
-gulp.task('bs-reload', function () {
-    browserSync.reload();
+gulp.task('server', function() {
+  connect.server();
 });
 
-/*
-   DEFAULT TASK
-
- • Process sass and lints outputted css
- • Outputted css is run through autoprefixer
- • Sends updates to any files in directory to browser for
- automatic reloading
-
-*/
-
-gulp.task('default', ['pre-process', 'minify-css', 'bs-reload', 'browser-sync'], function(){
-  gulp.start('pre-process', 'csslint');
-  gulp.watch('sass/*.scss', ['pre-process']);
-  gulp.watch('css/beats.css', ['bs-reload']);
-  gulp.watch(['*.html'], ['bs-reload']);
+gulp.task('default', ['compilejs', 'docs-sass', 'docs-js', 'docs-pygmentize', 'server'], function() {
+  gulp.watch(
+    ['./src/**/*', './docs/src/**/*', './docs/vuejs/src/**/*', './docs/angular/src/**/*'],
+    ['compilejs', 'docs-sass', 'docs-js', 'docs-pygmentize']
+  );
 });
+
 

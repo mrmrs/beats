@@ -21,7 +21,7 @@
 var plangular = {};
 var jsonp = require('jsonp');
 
-plangular.clientID = '0d33361983f16d2527b01fbf6408b7d7';
+plangular.clientID = 'd9a427af1110e729ee5e0ebcf2bc5818';
 plangular.api = '//api.soundcloud.com/resolve.json';
 plangular.data = {};
 

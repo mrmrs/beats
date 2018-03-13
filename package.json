@@ -19,19 +19,19 @@
     "url": "https://github.com/mrmrs/beats/issues"
   },
   "devDependencies": {
-    "browser-sync": "^1.3.0",
-    "gulp": "~3.5.0",
-    "gulp-autoprefixer": "0.0.5",
-    "gulp-csslint": "~0.1.3",
-    "gulp-imagemin": "~0.1.4",
-    "gulp-minify-css": "^0.3.7",
-    "gulp-rename": "^1.2.0",
-    "gulp-ruby-sass": "~0.2.0",
-    "gulp-size": "^1.0.0",
-    "gulp-svgmin": "~0.4.1",
-    "gulp-util": "~2.2.12",
-    "gulp-watch": "~0.5.0",
-    "jshint-stylish": "~0.1.5"
+    "browser-sync": "^2.23.6",
+    "gulp": "~3.9.1",
+    "gulp-autoprefixer": "5.0.0",
+    "gulp-csslint": "~1.0.1",
+    "gulp-imagemin": "~4.1.0",
+    "gulp-minify-css": "^1.2.4",
+    "gulp-rename": "^1.2.2",
+    "gulp-ruby-sass": "~3.0.0",
+    "gulp-size": "^3.0.0",
+    "gulp-svgmin": "~1.2.4",
+    "gulp-util": "~3.0.8",
+    "gulp-watch": "~5.0.0",
+    "jshint-stylish": "~2.2.1"
   },
   "scripts": {
     "start": "gulp"
